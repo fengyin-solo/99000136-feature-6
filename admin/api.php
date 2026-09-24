@@ -20,6 +20,7 @@ switch ($action) {
         $msg['content'] = nl2br(cleanInput($msg['content']));
         $msg['title'] = cleanInput($msg['title']);
         $msg['nickname'] = cleanInput($msg['nickname']);
+        $msg['images'] = getMessageImages($msg);
         jsonResponse(0, 'ok', $msg);
         break;
 
@@ -34,12 +35,10 @@ switch ($action) {
 
     case 'delete':
         $id = intval($_POST['id'] ?? 0);
-        // 删除关联图片
-        $stmt = $db->prepare("SELECT image FROM messages WHERE id = ?");
-        $stmt->execute([$id]);
-        $msg = $stmt->fetch();
-        if ($msg && $msg['image']) {
-            $imgFile = __DIR__ . '/../' . $msg['image'];
+        // 删除关联的全部图片
+        $images = getMessageImages($id);
+        foreach ($images as $img) {
+            $imgFile = __DIR__ . '/../' . $img;
             if (file_exists($imgFile)) unlink($imgFile);
         }
         $db->prepare("DELETE FROM messages WHERE id = ?")->execute([$id]);
@@ -58,6 +57,9 @@ switch ($action) {
         $report['status_class'] = getReportStatusClass($report['status']);
         $report['message_exists'] = !empty($report['message_title']);
         $report['message_type_label'] = $report['message_type'] ? getTypeLabel($report['message_type']) : '';
+        $report['message_images'] = $report['message_exists']
+            ? getMessageImages(['id' => $report['message_id'], 'image' => $report['message_image']])
+            : [];
         $report['message_title'] = $report['message_title'] ? cleanInput($report['message_title']) : '';
         $report['message_nickname'] = $report['message_nickname'] ? cleanInput($report['message_nickname']) : '';
         $report['message_content'] = $report['message_content'] ? nl2br(cleanInput($report['message_content'])) : '';
@@ -83,11 +85,8 @@ switch ($action) {
             if (!$report) jsonResponse(1, '举报不存在或已处理');
 
             if ($status === 1) {
-                $stmt = $db->prepare("SELECT image FROM messages WHERE id = ?");
-                $stmt->execute([$report['message_id']]);
-                $msg = $stmt->fetch();
-                if ($msg && $msg['image']) {
-                    $imgFile = __DIR__ . '/../' . $msg['image'];
+                foreach (getMessageImages($report['message_id']) as $img) {
+                    $imgFile = __DIR__ . '/../' . $img;
                     if (file_exists($imgFile)) unlink($imgFile);
                 }
                 $db->prepare("DELETE FROM messages WHERE id = ?")->execute([$report['message_id']]);

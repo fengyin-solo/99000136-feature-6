@@ -49,9 +49,14 @@ include __DIR__ . '/includes/header.php';
                 <?= nl2br(cleanInput($msg['content'])) ?>
             </div>
 
-            <?php if ($msg['image']): ?>
-            <div class="detail-image">
-                <img src="<?= cleanInput($msg['image']) ?>" alt="留言图片" onclick="window.open(this.src)">
+            <?php $images = getMessageImages($msg); ?>
+            <?php if ($images): ?>
+            <div class="detail-gallery">
+                <?php foreach ($images as $img): ?>
+                <div class="gallery-item">
+                    <img src="<?= cleanInput($img) ?>" alt="留言图片" onclick="window.open(this.src)">
+                </div>
+                <?php endforeach; ?>
             </div>
             <?php endif; ?>
 

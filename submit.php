@@ -14,7 +14,27 @@ include __DIR__ . '/includes/header.php';
     <div class="container">
         <div class="submit-card">
             <h2 class="submit-title">📝 发布留言</h2>
+
+            <?php if (isset($_GET['submitted'])): ?>
+            <div class="submit-success-tip" id="submitSuccessTip">
+                ✅ 留言已提交，正在等待审核。你可以继续编辑发布下一条留言。
+            </div>
+            <?php endif; ?>
+
+            <div class="draft-toolbar" id="draftToolbar" style="display:none;">
+                <span class="draft-status" id="draftStatus">📌 草稿已自动暂存</span>
+                <div class="draft-actions">
+                    <button type="button" class="btn btn-xs btn-secondary" id="exportDraftBtn">📦 导出草稿文件</button>
+                    <button type="button" class="btn btn-xs btn-secondary" id="importDraftBtn">📂 导入草稿文件</button>
+                    <button type="button" class="btn btn-xs btn-danger" id="clearDraftBtn">🗑 清除草稿</button>
+                    <input type="file" id="importDraftFile" accept="application/json,.json" hidden>
+                </div>
+            </div>
+
             <form id="submitForm" class="submit-form" enctype="multipart/form-data">
+                <input type="hidden" name="draft_key" id="draftKey">
+                <input type="hidden" name="visitor_id" id="visitorId">
+
                 <div class="form-group">
                     <label for="nickname">昵称 <span class="required">*</span></label>
                     <input type="text" id="nickname" name="nickname" placeholder="请输入您的昵称" maxlength="50" required>
@@ -26,7 +46,7 @@ include __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
-                    <label for="type">留言类型 <span class="required">*</span></label>
+                    <label>留言类型 <span class="required">*</span></label>
                     <div class="type-selector">
                         <label class="type-option">
                             <input type="radio" name="type" value="help" checked>
@@ -55,19 +75,19 @@ include __DIR__ . '/includes/header.php';
                 </div>
 
                 <div class="form-group">
-                    <label for="image">上传图片</label>
-                    <div class="upload-area" id="uploadArea">
-                        <input type="file" id="image" name="image" accept="image/*" hidden>
-                        <div class="upload-placeholder" id="uploadPlaceholder" onclick="document.getElementById('image').click()">
-                            <div class="upload-icon">📷</div>
-                            <p>点击上传图片</p>
-                            <span class="upload-hint">支持 JPG、PNG、GIF，最大 5MB</span>
-                        </div>
-                        <div class="upload-preview" id="uploadPreview" style="display:none;">
-                            <img id="previewImg" src="" alt="预览">
-                            <button type="button" class="remove-image" onclick="removeImage()">✕ 移除</button>
+                    <label>上传图片 <span class="text-muted">（最多 9 张，可拖动调整顺序，第一张为封面）</span></label>
+                    <div class="multi-upload" id="multiUpload">
+                        <!-- 图片槽位由 JS 渲染 -->
+                        <div class="upload-add" id="uploadAdd" title="添加图片">
+                            <div class="upload-add-inner">
+                                <div class="upload-icon">📷</div>
+                                <p>添加图片</p>
+                                <span class="upload-hint">JPG/PNG/GIF/WebP，单张 ≤5MB</span>
+                            </div>
+                            <input type="file" id="imageInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple hidden>
                         </div>
                     </div>
+                    <p class="form-image-tip" id="imageFormTip" style="display:none;"></p>
                 </div>
 
                 <div class="form-actions">
@@ -79,66 +99,5 @@ include __DIR__ . '/includes/header.php';
     </div>
 </section>
 
-<script>
-// 字数统计
-document.getElementById('content').addEventListener('input', function() {
-    document.getElementById('charCount').textContent = this.value.length;
-});
-
-// 图片预览
-document.getElementById('image').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-        alert('图片大小不能超过5MB');
-        this.value = '';
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        document.getElementById('previewImg').src = ev.target.result;
-        document.getElementById('uploadPlaceholder').style.display = 'none';
-        document.getElementById('uploadPreview').style.display = 'flex';
-    };
-    reader.readAsDataURL(file);
-});
-
-function removeImage() {
-    document.getElementById('image').value = '';
-    document.getElementById('uploadPlaceholder').style.display = 'flex';
-    document.getElementById('uploadPreview').style.display = 'none';
-    document.getElementById('previewImg').src = '';
-}
-
-// 表单提交
-document.getElementById('submitForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.textContent = '提交中...';
-
-    const formData = new FormData(this);
-    fetch('api/submit.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.code === 0) {
-            alert('留言提交成功，等待审核！');
-            window.location.href = 'index.php';
-        } else {
-            alert(data.msg || '提交失败');
-            btn.disabled = false;
-            btn.textContent = '提交留言';
-        }
-    })
-    .catch(() => {
-        alert('网络错误，请重试');
-        btn.disabled = false;
-        btn.textContent = '提交留言';
-    });
-});
-</script>
-
+<script src="assets/js/draft.js"></script>
 <?php include __DIR__ . '/includes/footer.php'; ?>

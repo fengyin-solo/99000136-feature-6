@@ -40,6 +40,9 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $messages = $stmt->fetchAll();
 
+// 批量获取各留言的有序图片（顺序与详情、待审核队列一致）
+$imagesMap = getMessagesImagesMap($messages);
+
 // 获取当前用户已收藏的留言ID
 $favoritedIds = getFavoritedMessageIds();
 $favoritedIds = array_flip($favoritedIds);
@@ -140,9 +143,17 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     <h3 class="card-title"><?= cleanInput($msg['title']) ?></h3>
                     <p class="card-content"><?= cleanInput(mb_substr($msg['content'], 0, 80)) ?><?= mb_strlen($msg['content']) > 80 ? '...' : '' ?></p>
+                    <?php if (!empty($imagesMap[$msg['id']])): ?>
+                    <div class="card-thumb">
+                        <img src="<?= cleanInput($imagesMap[$msg['id']][0]) ?>" alt="留言图片" loading="lazy">
+                        <?php if (count($imagesMap[$msg['id']]) > 1): ?>
+                        <span class="card-image-count">📷 <?= count($imagesMap[$msg['id']]) ?> 张</span>
+                        <?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="card-footer">
                         <span class="card-author">👤 <?= cleanInput($msg['nickname']) ?></span>
-                        <?php if ($msg['image']): ?>
+                        <?php if (!empty($imagesMap[$msg['id']])): ?>
                         <span class="card-image">📷 有图</span>
                         <?php endif; ?>
                         <span class="card-views">👁 <?= $msg['views'] ?></span>

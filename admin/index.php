@@ -47,6 +47,9 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $messages = $stmt->fetchAll();
 
+// 批量获取有序图片（顺序与前台列表、详情一致）
+$imagesMap = getMessagesImagesMap($messages);
+
 // 统计
 $pendingCount = $db->query("SELECT COUNT(*) FROM messages WHERE status = 0")->fetchColumn();
 
@@ -104,6 +107,7 @@ include __DIR__ . '/header.php';
                         <th>ID</th>
                         <th>类型</th>
                         <th>标题</th>
+                        <th>图片</th>
                         <th>昵称</th>
                         <th>状态</th>
                         <th>浏览</th>
@@ -113,13 +117,27 @@ include __DIR__ . '/header.php';
                 </thead>
                 <tbody>
                     <?php if (empty($messages)): ?>
-                    <tr><td colspan="8" class="text-center">暂无数据</td></tr>
+                    <tr><td colspan="9" class="text-center">暂无数据</td></tr>
                     <?php else: ?>
                     <?php foreach ($messages as $msg): ?>
                     <tr>
                         <td><?= $msg['id'] ?></td>
                         <td><span class="badge badge-<?= $msg['type'] ?>"><?= getTypeLabel($msg['type']) ?></span></td>
                         <td class="td-title" title="<?= cleanInput($msg['title']) ?>"><?= cleanInput(mb_substr($msg['title'], 0, 20)) ?></td>
+                        <td>
+                            <?php if (!empty($imagesMap[$msg['id']])): ?>
+                            <div class="admin-thumbs">
+                                <?php foreach (array_slice($imagesMap[$msg['id']], 0, 3) as $img): ?>
+                                <img src="../<?= cleanInput($img) ?>" alt="图片" loading="lazy">
+                                <?php endforeach; ?>
+                                <?php if (count($imagesMap[$msg['id']]) > 3): ?>
+                                <span class="admin-thumbs-more">+<?= count($imagesMap[$msg['id']]) - 3 ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php else: ?>
+                            <span class="text-muted">-</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= cleanInput($msg['nickname']) ?></td>
                         <td><span class="status-badge status-<?= getStatusClass($msg['status']) ?>"><?= getStatusLabel($msg['status']) ?></span></td>
                         <td><?= $msg['views'] ?></td>
@@ -222,7 +240,13 @@ function viewMessage(id) {
             html += '<p><strong>昵称：</strong>' + d.nickname + '</p>';
             html += '<p><strong>电话：</strong>' + (d.phone || '未填写') + '</p>';
             html += '<p><strong>内容：</strong></p><div class="detail-text">' + d.content + '</div>';
-            if (d.image) html += '<p><strong>图片：</strong><br><img src="../' + d.image + '" style="max-width:100%;margin-top:8px;"></p>';
+            if (d.images && d.images.length) {
+                html += '<p><strong>图片（' + d.images.length + '张，按留言排序）：</strong></p><div class="admin-detail-gallery">';
+                d.images.forEach(function(src, i) {
+                    html += '<figure><img src="../' + encodeURI(src) + '" style="max-width:100%;margin-top:8px;border-radius:6px;"><figcaption>第 ' + (i + 1) + ' 张</figcaption></figure>';
+                });
+                html += '</div>';
+            }
             html += '<p><strong>状态：</strong>' + d.status_label + '</p>';
             html += '<p><strong>浏览量：</strong>' + d.views + '</p>';
             html += '<p><strong>时间：</strong>' + d.created_at + '</p>';

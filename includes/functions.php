@@ -234,3 +234,73 @@ function getPendingReportCount() {
     $db = getDB();
     return $db->query("SELECT COUNT(*) FROM reports WHERE status = 0")->fetchColumn();
 }
+
+/**
+ * 获取一条留言的图片列表（按用户排序返回）
+ * 优先取 message_images 表；无记录时回退到旧的 image 单图字段
+ *
+ * @param array|int $message 留言数组（含 id / image）或留言ID
+ * @return array 图片路径数组，如 ['uploads/a.jpg', 'uploads/b.jpg']
+ */
+function getMessageImages($message) {
+    $db = getDB();
+
+    if (is_array($message)) {
+        $id = intval($message['id'] ?? 0);
+        $fallback = !empty($message['image']) ? [$message['image']] : [];
+    } else {
+        $id = intval($message);
+        $fallback = [];
+    }
+    if ($id <= 0) return $fallback;
+
+    static $cache = [];
+    if (!array_key_exists($id, $cache)) {
+        $stmt = $db->prepare("SELECT image FROM message_images WHERE message_id = ? ORDER BY sort_order ASC, id ASC");
+        $stmt->execute([$id]);
+        $cache[$id] = array_column($stmt->fetchAll(), 'image');
+    }
+
+    $images = $cache[$id];
+    if ($images) return $images;
+
+    // 多图表无记录时回退到历史单图字段
+    if ($fallback) return $fallback;
+    if (!is_array($message)) {
+        $stmt = $db->prepare("SELECT image FROM messages WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch();
+        if ($row && $row['image']) return [$row['image']];
+    }
+    return [];
+}
+
+/**
+ * 批量获取多条留言的图片列表，避免列表页 N+1 查询
+ * 返回 [message_id => [path, ...]]
+ */
+function getMessagesImagesMap(array $messages) {
+    $db = getDB();
+    $ids = [];
+    foreach ($messages as $msg) {
+        if (!empty($msg['id'])) $ids[] = intval($msg['id']);
+    }
+    $map = [];
+    if (!$ids) return $map;
+
+    $in = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $db->prepare("SELECT message_id, image FROM message_images WHERE message_id IN ($in) ORDER BY sort_order ASC, id ASC");
+    $stmt->execute($ids);
+    foreach ($stmt->fetchAll() as $row) {
+        $map[$row['message_id']][] = $row['image'];
+    }
+
+    // 没有多图记录的留言回退到历史单图字段
+    foreach ($messages as $msg) {
+        $mid = intval($msg['id']);
+        if (empty($map[$mid]) && !empty($msg['image'])) {
+            $map[$mid] = [$msg['image']];
+        }
+    }
+    return $map;
+}
