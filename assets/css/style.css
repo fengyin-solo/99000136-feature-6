@@ -315,6 +315,187 @@ a:hover { color: var(--primary-dark); }
     font-size: .9rem;
 }
 
+/* 多图网格（可拖拽排序） */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    padding: 16px;
+}
+.image-tile {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    cursor: grab;
+}
+.image-tile:active { cursor: grabbing; }
+.image-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.image-tile.dragover { outline: 2px dashed var(--primary); outline-offset: -2px; }
+.image-order {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(17, 24, 39, .72);
+    color: #fff;
+    font-size: .8rem;
+    border-radius: 11px;
+    pointer-events: none;
+}
+.image-controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 4px;
+    background: linear-gradient(transparent, rgba(17, 24, 39, .65));
+    opacity: 0;
+    transition: var(--transition);
+}
+.image-tile:hover .image-controls { opacity: 1; }
+.img-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, .9);
+    color: var(--gray-700);
+    cursor: pointer;
+    font-size: .8rem;
+    line-height: 1;
+}
+.img-btn:hover { background: #fff; color: var(--primary); }
+.img-btn-danger:hover { color: var(--danger); }
+.image-add {
+    aspect-ratio: 1 / 1;
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius-sm);
+    background: var(--gray-50);
+    color: var(--gray-400);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: .85rem;
+    transition: var(--transition);
+}
+.image-add:hover { border-color: var(--primary); color: var(--primary); background: rgba(79,70,229,.04); }
+.image-add-icon { font-size: 1.8rem; }
+.image-add-hint { font-size: .72rem; }
+
+/* 图片不合规：原位保留，支持单独恢复 */
+.image-tile.invalid {
+    border: 1px solid var(--danger);
+    outline: 2px solid rgba(239, 68, 68, .25);
+    cursor: default;
+}
+.image-error-box {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px;
+    text-align: center;
+}
+.image-error-icon { font-size: 1.4rem; }
+.image-error-name {
+    font-size: .72rem;
+    color: var(--gray-600);
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.image-error-msg { font-size: .72rem; color: var(--danger); line-height: 1.3; }
+
+/* 草稿状态条 */
+.draft-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    background: rgba(79, 70, 229, .07);
+    border: 1px solid rgba(79, 70, 229, .2);
+    border-radius: var(--radius-sm);
+    font-size: .85rem;
+    color: var(--primary-dark);
+}
+.draft-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+
+/* 列表卡片缩略图 */
+.card-thumb {
+    position: relative;
+    margin: 10px 0 4px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    max-width: 220px;
+}
+.card-thumb img {
+    width: 100%;
+    max-height: 140px;
+    object-fit: cover;
+    display: block;
+}
+.card-thumb-count {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    padding: 2px 8px;
+    background: rgba(17, 24, 39, .72);
+    color: #fff;
+    font-size: .75rem;
+    border-radius: 10px;
+}
+
+/* 详情多图画廊（按提交顺序） */
+.detail-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.detail-gallery .detail-image { margin-bottom: 0; }
+.detail-gallery .detail-image img {
+    width: 100%;
+    height: 100%;
+    max-height: 320px;
+    object-fit: cover;
+}
+
+/* 后台弹窗有序图片列表 */
+.admin-image-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+.admin-image-list img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    cursor: pointer;
+}
+
 /* Form Actions */
 .form-actions { display: flex; gap: 12px; justify-content: center; margin-top: 24px; }
 

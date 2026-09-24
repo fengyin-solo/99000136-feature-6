@@ -39,6 +39,9 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $favorites = $stmt->fetchAll();
 
+// 统一补充有序图片信息（首图用于缩略图），兼容旧单图
+attachFirstImages($favorites);
+
 $favoritedIds = getFavoritedMessageIds();
 $favoritedIds = array_flip($favoritedIds);
 
@@ -111,10 +114,16 @@ include __DIR__ . '/includes/header.php';
                     </div>
                     <h3 class="card-title"><?= cleanInput($msg['title']) ?></h3>
                     <p class="card-content"><?= cleanInput(mb_substr($msg['content'], 0, 80)) ?><?= mb_strlen($msg['content']) > 80 ? '...' : '' ?></p>
+                    <?php if ($msg['first_image']): ?>
+                    <div class="card-thumb">
+                        <img src="<?= cleanInput($msg['first_image']) ?>" alt="留言图片" loading="lazy">
+                        <?php if (count($msg['images']) > 1): ?><span class="card-thumb-count">共 <?= count($msg['images']) ?> 张</span><?php endif; ?>
+                    </div>
+                    <?php endif; ?>
                     <div class="card-footer">
                         <span class="card-author">👤 <?= cleanInput($msg['nickname']) ?></span>
-                        <?php if ($msg['image']): ?>
-                        <span class="card-image">📷 有图</span>
+                        <?php if (!empty($msg['images'])): ?>
+                        <span class="card-image">📷 <?= count($msg['images']) ?> 张</span>
                         <?php endif; ?>
                         <span class="card-views">👁 <?= $msg['views'] ?></span>
                     </div>

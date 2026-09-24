@@ -234,3 +234,77 @@ function getPendingReportCount() {
     $db = getDB();
     return $db->query("SELECT COUNT(*) FROM reports WHERE status = 0")->fetchColumn();
 }
+
+/**
+ * 获取一条留言的全部图片（按 sort_order 升序）
+ * 列表、详情、后台待处理队列统一通过此函数读取，保证顺序一致。
+ * 兼容旧数据：无多图记录时回退到 messages.image 单图字段。
+ */
+function getMessageImages($messageId) {
+    $db = getDB();
+    try {
+        $stmt = $db->prepare("SELECT image FROM message_images WHERE message_id = ? ORDER BY sort_order ASC, id ASC");
+        $stmt->execute([$messageId]);
+        $images = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($images)) {
+            return $images;
+        }
+    } catch (PDOException $e) {
+        // 多图表尚未迁移时静默回退到单图字段
+    }
+
+    $stmt = $db->prepare("SELECT image FROM messages WHERE id = ?");
+    $stmt->execute([$messageId]);
+    $legacy = $stmt->fetchColumn();
+    return $legacy ? [$legacy] : [];
+}
+
+/**
+ * 批量为留言列表补充图片信息，避免逐条查询（N+1）
+ * 给每条留言附加：
+ *  - images：图片路径数组（按顺序），无图为空数组
+ *  - first_image：第一张图路径，无图为 null（供列表缩略图使用）
+ * 兼容旧数据：无多图记录时回退到 messages.image 字段。
+ */
+function attachFirstImages(array &$messages) {
+    if (empty($messages)) return;
+
+    $db = getDB();
+    $ids = array_column($messages, 'id');
+    $map = [];
+
+    try {
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $db->prepare("SELECT message_id, image FROM message_images WHERE message_id IN ($in) ORDER BY sort_order ASC, id ASC");
+        $stmt->execute($ids);
+        foreach ($stmt->fetchAll() as $row) {
+            $map[$row['message_id']][] = $row['image'];
+        }
+    } catch (PDOException $e) {
+        // 多图表尚未迁移时静默回退到单图字段
+    }
+
+    foreach ($messages as &$m) {
+        $images = $map[$m['id']] ?? [];
+        if (empty($images) && !empty($m['image'])) {
+            $images = [$m['image']];
+        }
+        $m['images'] = $images;
+        $m['first_image'] = $images[0] ?? null;
+    }
+    unset($m);
+}
+
+/**
+ * 删除留言时清理其全部图片文件（多图表 + 旧单图字段）
+ */
+function deleteMessageImageFiles($messageId) {
+    $images = getMessageImages($messageId);
+    foreach ($images as $path) {
+        if (!$path) continue;
+        $file = __DIR__ . '/../' . $path;
+        if (is_file($file)) {
+            @unlink($file);
+        }
+    }
+}

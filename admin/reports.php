@@ -244,8 +244,12 @@ function viewReport(id) {
                 html += '<p><strong>留言作者：</strong>' + d.message_nickname + '</p>';
                 html += '<p><strong>留言类型：</strong>' + d.message_type_label + '</p>';
                 html += '<p><strong>留言内容：</strong></p><div class="detail-text">' + d.message_content + '</div>';
-                if (d.message_image) {
-                    html += '<p><strong>留言图片：</strong><br><img src="../' + d.message_image + '" style="max-width:100%;margin-top:8px;"></p>';
+                if (d.message_images && d.message_images.length) {
+                    html += '<p><strong>留言图片（共' + d.message_images.length + '张，按提交顺序）：</strong></p><div class="admin-image-list">';
+                    d.message_images.forEach(function(src, i) {
+                        html += '<img src="../' + src + '" title="第' + (i + 1) + '张" onclick="window.open(this.src)">';
+                    });
+                    html += '</div>';
                 }
                 html += '<p><a href="../detail.php?id=' + d.message_id + '" target="_blank" class="btn btn-sm btn-info">查看原留言</a></p>';
             } else {

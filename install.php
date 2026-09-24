@@ -22,15 +22,28 @@ try {
         `type` ENUM('help','suggest','lost') NOT NULL DEFAULT 'help' COMMENT '类型: help求助, suggest建议, lost失物招领',
         `title` VARCHAR(100) NOT NULL COMMENT '标题',
         `content` TEXT NOT NULL COMMENT '内容',
-        `image` VARCHAR(255) DEFAULT NULL COMMENT '图片路径',
+        `image` VARCHAR(255) DEFAULT NULL COMMENT '图片路径（兼容旧单图）',
+        `submit_token` VARCHAR(64) DEFAULT NULL COMMENT '草稿提交令牌，用于幂等提交',
         `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态: 0待审核, 1已通过, 2已拒绝',
         `views` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '浏览量',
         `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE INDEX `uk_submit_token` (`submit_token`),
         INDEX `idx_type` (`type`),
         INDEX `idx_status` (`status`),
         INDEX `idx_created` (`created_at`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留言表'");
+
+    // 留言图片表（多图，按 sort_order 排序）
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `message_images` (
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        `message_id` INT UNSIGNED NOT NULL COMMENT '留言ID',
+        `image` VARCHAR(255) NOT NULL COMMENT '图片相对路径',
+        `sort_order` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序序号，从0开始',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        INDEX `idx_message_sort` (`message_id`, `sort_order`),
+        FOREIGN KEY (`message_id`) REFERENCES `messages`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='留言图片表'");
 
     // 管理员表
     $pdo->exec("CREATE TABLE IF NOT EXISTS `admins` (

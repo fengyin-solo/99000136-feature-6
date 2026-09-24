@@ -222,7 +222,13 @@ function viewMessage(id) {
             html += '<p><strong>昵称：</strong>' + d.nickname + '</p>';
             html += '<p><strong>电话：</strong>' + (d.phone || '未填写') + '</p>';
             html += '<p><strong>内容：</strong></p><div class="detail-text">' + d.content + '</div>';
-            if (d.image) html += '<p><strong>图片：</strong><br><img src="../' + d.image + '" style="max-width:100%;margin-top:8px;"></p>';
+            if (d.images && d.images.length) {
+                html += '<p><strong>图片（共' + d.images.length + '张，按提交顺序）：</strong></p><div class="admin-image-list">';
+                d.images.forEach(function(src, i) {
+                    html += '<img src="../' + src + '" title="第' + (i + 1) + '张" onclick="window.open(this.src)">';
+                });
+                html += '</div>';
+            }
             html += '<p><strong>状态：</strong>' + d.status_label + '</p>';
             html += '<p><strong>浏览量：</strong>' + d.views + '</p>';
             html += '<p><strong>时间：</strong>' + d.created_at + '</p>';
